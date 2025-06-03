@@ -1,0 +1,61 @@
+services:
+  powersync-service:
+    depends_on:
+      postgres-storage:
+        condition: service_healthy
+    image: journeyapps/powersync-service:latest
+    container_name: supabase-powersync
+    command: ["start", "-r", "unified"]
+    volumes:
+       - ./config/powersync.yml:/config/powersync.yml
+       - ./config/sync_rules.yml:/config/sync_rules.yml
+    environment:
+      POWERSYNC_CONFIG_PATH: /config/powersync.yml
+      PS_DATA_SOURCE_URI: ${PS_DATA_SOURCE_URI}
+      PS_STORAGE_URI: ${PS_STORAGE_URI}
+      PS_SUPABASE_JWT_SECRET: ${PS_SUPABASE_JWT_SECRET}
+      PS_PORT: ${PS_PORT}
+    ports:
+       - ${PS_PORT}:${PS_PORT}
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "powersync-service",
+          "health"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - supabase_default
+  
+  postgres-storage:
+    image: postgres:15-alpine
+    container_name: ps-storage
+    environment:
+      POSTGRES_USER: ${PG_STORAGE_DATABASE_USER}
+      POSTGRES_PASSWORD: ${PG_STORAGE_DATABASE_PASSWORD}
+      POSTGRES_DB: ${PG_STORAGE_DATABASE_NAME}
+      PGPORT: ${PG_STORAGE_DATABASE_PORT}
+    volumes:
+      - postgres-storage-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_STORAGE_DATABASE_USER} -d ${PG_STORAGE_DATABASE_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks:
+      - supabase_default
+    restart: unless-stopped
+    
+
+volumes:
+  postgres-storage-data:
+  config:
+
+networks:
+  supabase_default:
+    external: true
