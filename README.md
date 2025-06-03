@@ -4,4 +4,7 @@ This is a minimal Docker Compose setup for self-hosting Supabase. Follow the ste
 
 
 Run Command:
-`docker compose --env-file .env -f docker-compose.yml -f docker-compose-supabase.yml up --build`
+```bash
+docker compose --env-file .env -f docker-compose.yml up -d
+docker compose --env-file .env -f powersync-service.yml up -d
+```
